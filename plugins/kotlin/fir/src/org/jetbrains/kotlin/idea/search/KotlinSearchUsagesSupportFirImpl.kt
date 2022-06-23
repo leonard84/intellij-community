@@ -8,6 +8,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.psi.*
 import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.psi.search.SearchScope
+import com.intellij.psi.search.searches.ClassInheritorsSearch
 import com.intellij.psi.search.searches.DefinitionsScopedSearch
 import com.intellij.psi.search.searches.OverridingMethodsSearch
 import com.intellij.psi.util.MethodSignatureUtil
@@ -24,12 +25,15 @@ import org.jetbrains.kotlin.analysis.api.symbols.markers.KtSymbolWithModality
 import org.jetbrains.kotlin.analysis.api.KtAllowAnalysisOnEdt
 import org.jetbrains.kotlin.analysis.api.lifetime.allowAnalysisOnEdt
 import org.jetbrains.kotlin.asJava.classes.KtFakeLightMethod
+import org.jetbrains.kotlin.asJava.classes.KtLightClass
+import org.jetbrains.kotlin.asJava.toLightClass
 import org.jetbrains.kotlin.asJava.toLightMethods
 import org.jetbrains.kotlin.asJava.unwrapped
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.idea.base.projectStructure.RootKindFilter
 import org.jetbrains.kotlin.idea.base.projectStructure.matches
 import org.jetbrains.kotlin.idea.core.isInheritable
+import org.jetbrains.kotlin.idea.references.mainReference
 import org.jetbrains.kotlin.idea.references.unwrappedTargets
 import org.jetbrains.kotlin.idea.search.declarationsSearch.toPossiblyFakeLightMethods
 import org.jetbrains.kotlin.idea.search.usagesSearch.getDefaultImports
@@ -37,6 +41,7 @@ import org.jetbrains.kotlin.idea.stubindex.KotlinTypeAliasShortNameIndex
 import org.jetbrains.kotlin.idea.util.withResolvedCall
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.*
+import org.jetbrains.kotlin.psi.psiUtil.containingClass
 import org.jetbrains.kotlin.psi.psiUtil.containingClassOrObject
 import org.jetbrains.kotlin.psi.psiUtil.getNonStrictParentOfType
 import org.jetbrains.kotlin.resolve.ImportPath
@@ -287,10 +292,34 @@ class KotlinSearchUsagesSupportFirImpl(private val project: Project) : KotlinSea
     }
 
     override fun createConstructorHandle(psiMethod: PsiMethod): KotlinSearchUsagesSupport.ConstructorCallHandle {
-        //TODO FIR: This is the stub. Need to implement
         return object : KotlinSearchUsagesSupport.ConstructorCallHandle {
             override fun referencedTo(element: KtElement): Boolean {
-                return false
+                return when (element) {
+                    is KtConstructorDelegationCall -> {
+                        val constructorDelegationRef = element.calleeExpression?.mainReference
+                        val superMethod = constructorDelegationRef?.resolve()
+
+                        // Its explicit super() constructor matches psiMethod
+                        if (superMethod != null && superMethod == psiMethod) return true
+
+                        // When element does not call the explicit super() constructor, we check its parent class is an
+                        // inheritor of the class containing psiMethod to handle the implicit super() constructor call.
+                        val classContainingElement = element.containingClass()
+                        if (superMethod == null && classContainingElement != null) {
+                            val parameters =
+                                ClassInheritorsSearch.SearchParameters(
+                                    psiMethod.containingClass!!, element.resolveScope,
+                                    true, true, true
+                                )
+                            for (inheritor in ClassInheritorsSearch.search(parameters)) if (inheritor is KtLightClass) {
+                                if (classContainingElement.toLightClass() == inheritor) return true
+                            }
+                        }
+                        false
+                    }
+                    //TODO FIR: Handle other cases
+                    else -> false
+                }
             }
         }
     }
