@@ -3,6 +3,7 @@ package org.jetbrains.plugins.groovy.ext.spock;
 
 import com.intellij.openapi.util.NlsSafe;
 import com.intellij.util.containers.ContainerUtil;
+import org.jetbrains.annotations.NonNls;
 
 import java.util.Set;
 
@@ -12,7 +13,15 @@ public interface SpockConstants {
   @NlsSafe String CLEANUP_METHOD_NAME = "cleanup";
   @NlsSafe String SETUP_SPEC_METHOD_NAME = "setupSpec";
   @NlsSafe String CLEANUP_SPEC_METHOD_NAME = "cleanupSpec";
+  @NlsSafe String WITH_METHOD_NAME = "with";
+  @NlsSafe String VERIFY_ALL_METHOD_NAME = "verifyAll";
 
+  @NlsSafe String WHERE_LABEL = "where";
+  @NlsSafe String AND_LABEL = "and";
+  @NlsSafe String EXPECT_LABEL = "expect";
+  @NlsSafe String THEN_LABEL = "then";
+
+  @NonNls String CONDITION_BLOCK_ANNOTATION = "org.spockframework.lang.ConditionBlock";
   Set<String> FIXTURE_METHOD_NAMES = ContainerUtil.immutableSet(
     SETUP_METHOD_NAME,
     CLEANUP_METHOD_NAME,
@@ -21,6 +30,6 @@ public interface SpockConstants {
   );
 
   Set<@NlsSafe String> FEATURE_METHOD_LABELS = Set.of(
-    "and", "setup", "given", "expect", "when", "then", "cleanup", "where"
+    AND_LABEL, "setup", "given", EXPECT_LABEL, "when", THEN_LABEL, "cleanup", WHERE_LABEL
   );
 }

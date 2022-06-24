@@ -1285,6 +1285,12 @@
                      key="inspection.display.name.equals.between.inconvertible.types"
                      enabledByDefault="true"
                      implementationClass="org.jetbrains.plugins.groovy.codeInspection.bugs.GrEqualsBetweenInconvertibleTypesInspection"/>
+    <localInspection language="Groovy"
+                     groupPath="Groovy"
+                     groupKey="inspection.ext.spock"
+                     key="inspection.display.name.ext.spock.suspicious.assertion.statement"
+                     enabledByDefault="true"
+                     implementationClass="org.jetbrains.plugins.groovy.codeInspection.ext.spock.SuspiciousAssertionLikeStatementInspection"/>
 
     <packageDependencies.visitor language="Groovy"
                                  implementationClass="org.jetbrains.plugins.groovy.codeInspection.dependencies.GrDependencyVisitorFactory"/>

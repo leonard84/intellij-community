@@ -1,21 +1,17 @@
 // Copyright 2000-2020 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file.
 package org.jetbrains.plugins.groovy.ext.spock
 
-import com.intellij.openapi.util.NlsSafe
 import com.intellij.psi.PsiElement
 import com.intellij.psi.util.siblings
 import com.intellij.psi.util.skipTokens
+import org.jetbrains.plugins.groovy.ext.spock.SpockConstants.AND_LABEL
+import org.jetbrains.plugins.groovy.ext.spock.SpockConstants.WHERE_LABEL
 import org.jetbrains.plugins.groovy.lang.lexer.TokenSets.WHITE_SPACES_OR_COMMENTS
 import org.jetbrains.plugins.groovy.lang.psi.GroovyElementTypes
 import org.jetbrains.plugins.groovy.lang.psi.api.statements.GrLabeledStatement
 import org.jetbrains.plugins.groovy.lang.psi.api.statements.GrStatement
 import org.jetbrains.plugins.groovy.lang.psi.api.statements.expressions.GrBinaryExpression
 import org.jetbrains.plugins.groovy.lang.psi.api.statements.expressions.GrExpression
-
-@NlsSafe
-private const val WHERE_LABEL = "where"
-@NlsSafe
-private const val AND_LABEL = "and"
 
 /**
  * @return `true` if [this] expression is a binary `|` or `||` expression which is a part of Spock data table,
@@ -89,31 +85,8 @@ private fun GrStatement.isTableRow(): Boolean {
   return false
 }
 
-/**
- * foo:
- * bar:
- * where:
- * a << 1
- *
- * Such structure is parsed as `(foo: (bar: (where: (a << 1)))`.
- * We have to go deep and find `a << 1` statement.
- */
-fun findWhereLabeledStatement(top: GrLabeledStatement): GrStatement? {
-  var current = top
-  while (true) {
-    val labeledStatement = current.statement
-    when {
-      WHERE_LABEL == current.name -> {
-        return labeledStatement
-      }
-      labeledStatement is GrLabeledStatement -> {
-        current = labeledStatement
-      }
-      else -> {
-        return null
-      }
-    }
-  }
+fun findWhereLabeledStatement(top: GrLabeledStatement): GrStatement? = findLabeledStatement(top) {
+  it == WHERE_LABEL
 }
 
 private fun PsiElement.maybeTableColumnExpression() = this is GrBinaryExpression && isOr()
